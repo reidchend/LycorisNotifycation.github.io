@@ -1,64 +1,83 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Token Bridge</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lycoris Bridge Debug</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #1a1a1a; color: #00ff00; word-break: break-all; }
+        .log { margin-bottom: 10px; border-bottom: 1px solid #333; padding: 5px; font-size: 12px; }
+        .error { color: #ff4444; }
+        h3 { color: #fff; border-bottom: 2px solid #00ff00; padding-bottom: 5px; }
+    </style>
 </head>
 <body>
+    <h3>🛰️ Lycoris Bridge Status</h3>
+    <div id="console"></div>
+
     <script type="module">
+        const logger = document.getElementById("console");
+        function log(msg, isError = false) {
+            const div = document.createElement("div");
+            div.className = isError ? "log error" : "log";
+            div.innerText = `${new Date().toLocaleTimeString()} > ${msg}`;
+            logger.prepend(div);
+        }
+
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
         const firebaseConfig = {
-            // For Firebase JS SDK v7.20.0 and later, measurementId is optional
-            const firebaseConfig = {
-              apiKey: "AIzaSyCwQW8VD-bfOIbWhEUNh-fjOe6vkytrQPU",
-              authDomain: "lycoris-alertas.firebaseapp.com",
-              projectId: "lycoris-alertas",
-              storageBucket: "lycoris-alertas.firebasestorage.app",
-              messagingSenderId: "828115636853",
-              appId: "1:828115636853:web:b988d986b46a8ece02de3c",
-              measurementId: "G-XMZPNBQL1S"
-            };
+          apiKey: "AIzaSyCwQW8VD-bfOIbWhEUNh-fjOe6vkytrQPU",
+          authDomain: "lycoris-alertas.firebaseapp.com",
+          projectId: "lycoris-alertas",
+          storageBucket: "lycoris-alertas.firebasestorage.app",
+          messagingSenderId: "828115636853",
+          appId: "1:828115636853:web:b988d986b46a8ece02de3c",
+          measurementId: "G-XMZPNBQL1S"
+        };
 
-        const VAPID_KEY = "BHRziZv_mLHtVbmN6oR6rt_rIxTLjjbD-G1oGwG4lx9ggvh3gp2Qu1qnRxB13zQdj5mOsfl0vNKKYjMsJUDixAY";
-        const app = initializeApp(firebaseConfig);
-        const messaging = getMessaging(app);
+        // --- 🔑 PEGA AQUÍ TU CLAVE VAPID DE LA CONSOLA ---
+        const VAPID_KEY = "BHRziZv_mLHtVbmN6oR6rt_rIxTLjjbD-G1oGwG4lx9ggvh3gp2Qu1qnRxB13zQdj5mOsfl0vNKKYjMsJUDixAY"; 
+        // ------------------------------------------------
 
-        async function initBridge() {
-            try {
-                statusDiv.innerText = "Solicitando permiso...";
+        try {
+            const app = initializeApp(firebaseConfig);
+            const messaging = getMessaging(app);
+            log("Firebase inicializado correctamente.");
+
+            async function start() {
+                log("Solicitando permiso de notificaciones...");
                 const permission = await Notification.requestPermission();
-                
+                log(`Estado del permiso: ${permission}`);
+
                 if (permission === 'granted') {
-                    statusDiv.innerText = "Permiso concedido. Obteniendo token...";
+                    log("Registrando Service Worker y obteniendo Token...");
                     
                     const token = await getToken(messaging, { vapidKey: VAPID_KEY });
                     
                     if (token) {
-                        statusDiv.innerText = "Token generado con éxito.";
-                        // ENVIAR AL APP DE FLET
+                        log("✅ ¡TOKEN GENERADO CON ÉXITO!");
+                        log(`Token: ${token}`);
+                        
                         if (window.fletHandler) {
                             window.fletHandler.postMessage(token);
+                            log("Enviado a la App Lycoris.");
                         } else {
-                            console.log("Token:", token);
-                            statusDiv.innerText = "Token: " + token + " (Flet no detectado)";
+                            log("Aviso: Flet no detectado (estás en modo navegador).");
                         }
+                    } else {
+                        log("Error: No se recibió ningún token.", true);
                     }
                 } else {
-                    statusDiv.innerText = "Permiso denegado por el usuario.";
-                    window.fletHandler.postMessage("error: denied");
-                }
-            } catch (error) {
-                console.error(error);
-                statusDiv.innerText = "Error: " + error.message;
-                if (window.fletHandler) {
-                    window.fletHandler.postMessage("error: " + error.message);
+                    log("Error: El permiso fue denegado.", true);
                 }
             }
-        }
 
-        initBridge();
+            start();
+        } catch (e) {
+            log(`ERROR CRÍTICO: ${e.message}`, true);
+        }
     </script>
 </body>
-</html>
 </html>
